@@ -2,6 +2,23 @@ from flask import Flask,render_template,flash,redirect,url_for,session,logging,r
 from flask_mysqldb import MySQL
 from wtforms import Form,StringField,TextAreaField,PasswordField,validators
 from passlib.hash import sha256_crypt
+from functools import wraps
+
+
+#Kullanıcı Giriş Decoratorı
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "logged_in" in session:
+            return f(*args, **kwargs)
+        else:
+            flash("Log in  to view this page please","danger")
+            return redirect(url_for("login"))
+
+    return decorated_function
+
+
+
 
  #Kullanıcı Kayıt formu
 class RegisterForm(Form):
@@ -16,7 +33,6 @@ class RegisterForm(Form):
 
 
 # Login form
-
 class LoginForm(Form):
     username = StringField("Kullanıcı Adı")
     password = PasswordField("Parola")
@@ -27,15 +43,16 @@ class LoginForm(Form):
 app = Flask(__name__)
 app.secret_key="ybblog"
 
+#Mysql config
 app.config["MYSQL_HOST"]="localhost"
 app.config["MYSQL_USER"]="root"
 app.config["MYSQL_PASSWORD"]=""
 app.config["MYSQL_DB"]="ybblog"
 app.config["MYSQL_CURSORCLASS"]="DictCursor"
 
-
 mysql = MySQL(app)
 
+#Root
 @app.route("/")
 def index():
     articles = [
@@ -46,11 +63,14 @@ def index():
 
     return render_template("index.html", articles = articles)
 
+#About
 @app.route("/about")
 def about():
     return render_template("about.html")
 
+#Dashboard
 @app.route("/dashboard")
+@login_required
 def dashboard():
     return render_template("dashboard.html")
 
