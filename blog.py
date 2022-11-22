@@ -91,6 +91,9 @@ def login():
             real_password = data["password"]
             if sha256_crypt.verify(password_entered,real_password):
                 flash("you have successfully registered","success")
+                session["logged_in"] = True
+                session["username"] = username
+                
                 return redirect(url_for("index"))
             else:
                 flash("you entered password incorrectly ","danger")
