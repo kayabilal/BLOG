@@ -50,6 +50,13 @@ def index():
 def about():
     return render_template("about.html")
 
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
+
+
+
 #Register
 @app.route("/register",methods =["GET", "POST"])
 def register():
@@ -93,7 +100,7 @@ def login():
                 flash("you have successfully registered","success")
                 session["logged_in"] = True
                 session["username"] = username
-                
+
                 return redirect(url_for("index"))
             else:
                 flash("you entered password incorrectly ","danger")
@@ -102,10 +109,14 @@ def login():
             flash("There is no such user.","danger")
             return  redirect(url_for("login"))
 
-
-
-
     return render_template("login.html", form = form)
+
+# Logout işlemi
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
 
 
 if __name__ =="__main__":
