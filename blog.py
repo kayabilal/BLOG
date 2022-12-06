@@ -68,11 +68,38 @@ def index():
 def about():
     return render_template("about.html")
 
+#Makaleler sayfası
+@app.route("/articles")
+def articles():
+    cursor = mysql.connection.cursor()
+
+    query = "Select * From articles"
+
+    result = cursor.execute(query)
+
+    if result > 0:
+        articles = cursor.fetchall()
+        return render_template("articles.html",articles = articles)
+    else:
+        return render_template("articles.html")
+
+    
+
+
+
+
 #Dashboard
-@app.route("/dashboard")
+@app.route("/dashboard")   
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    cursor = mysql.connection.cursor()
+    query = "Select * from articles where author = %s"
+    result = cursor.execute(query,(session["username"],))
+    if result > 0:
+        articles = cursor.fetchall()
+        return render_template("dashboard.html",articles = articles)
+    else:
+        return render_template("dashboard.html")
 
 
 
@@ -131,6 +158,26 @@ def login():
 
     return render_template("login.html", form = form)
 
+#Detay sayfası
+@app.route("/article/<string:id>")
+def article(id):
+    cursor =mysql.connection.cursor()
+
+    query = "Select * from articles where id = %s"
+
+    result = cursor.execute(query,(id,))
+
+    if result >0:
+        article = cursor.fetchone()
+        return render_template("article.html",article = article)
+    else:
+        return render_template("article.html")
+
+
+
+
+
+
 # Logout işlemi
 @app.route("/logout")
 def logout():
@@ -155,6 +202,91 @@ def addarticle():
         return redirect(url_for("dashboard"))
 
     return render_template("addarticle.html",form = form)
+
+#Makale Silme
+@app.route("/delete/<string:id>")
+@login_required
+def delete(id):
+    cursor = mysql.connection.cursor()
+
+    query = "Select * from articles where author = %s and id = %s"
+
+    result =cursor.execute(query,(session["username"],id))
+
+    if result > 0:
+        query2 ="Delete from articles where id =%s"
+        cursor.execute(query2,(id,))
+
+        mysql.connection.commit()
+
+        return redirect(url_for("dashboard"))
+    
+    else:
+        flash("Böyle bir makale yok veya bu işleme yetkiniz yok ","danger")
+        return redirect(url_for("index"))
+
+
+#Makale Güncelleme
+@app.route("/edit/<string:id>",methods = ["GET","POST"])
+@login_required
+def update(id):
+    if request.method == "GET":
+        cursor = mysql.connection.cursor()
+        query = "Select * from articles where id =%s and author = %s"
+        result = cursor.execute(query,(id,session["username"]))
+        if result ==0:
+            flash("böyle bir makale yok veya yetkiniz yok.")
+            return redirect(url_for("index"))
+        else:
+            article = cursor.fetchone()
+            form  =ArticleForm()
+
+            form.title.data = article["title"]
+            form.content.data = article["content"]
+            return render_template("update.html",form =form)
+    
+
+    else:
+        #post request
+        form = ArticleForm(request.form)
+        newTitle = form.title.data
+        newContent = form.content.data
+
+        query2 = "Update articles Set title = %s,content = %s  where id = %s"
+        cursor  =mysql.connection.cursor()
+        cursor.execute(query2,(newTitle,newContent,id))
+        mysql.connection.commit()
+
+        flash("Makale başar ile güncellendi","success")
+        return redirect(url_for("dashboard"))
+
+#Arama URL
+@app.route("/search",methods = ["GET","POST"])
+def search():
+    if request.method == "GET":
+        return redirect(url_for("index"))
+    
+    else:
+        keyword = request.form.get("keyword")
+        cursor = mysql.connection.cursor()
+
+        query = "Select * from articles where title like '%" + keyword +"%' "
+        result = cursor.execute(query)
+
+        if result ==0:
+            flash("Aranan kelimeye uygun makale bulunmadı","warning")
+            return redirect(url_for("articles"))
+
+        else:
+            articles = cursor.fetchall()
+            return render_template("articles.html",articles = articles)
+
+
+
+
+
+
+
 
 #Makale Form
 
